@@ -1,0 +1,87 @@
+#!/usr/bin/ruby
+require 'open-uri'
+require 'csv'
+require 'date'
+require "pstore"
+require 'pp'
+
+$stdout.sync = false
+$stderr.sync = false
+
+Dir.chdir(File.dirname($0))
+$db = PStore.new(File.dirname($0) + '/.pstore')
+
+def usage
+  puts "usage : #{$0} cmd {arg1} {arg2}..."
+
+  exit(1)
+end
+
+if ARGV.size == 0
+  usage()
+end
+
+class Date
+  def get_national_holiday
+    csv_url = "https://www8.cao.go.jp/chosei/shukujitsu/syukujitsu.csv"
+
+    update_date = nil
+    $db.transaction do
+      update_date = $db['update_date']
+    end
+
+    holiday = []
+    if update_date == nil || self - update_date > 7
+      csv = CSV.parse(open(csv_url).read.encode("UTF-8", "Shift_JIS"))
+      csv.each do |l|
+        begin
+          d = Date.strptime(l[0], '%Y/%m/%d')
+          holiday << d
+        rescue
+        end
+      end
+      $db.transaction do
+        $db['holiday'] = holiday
+        $db['update_date'] = self
+      end
+    else
+      $db.transaction do
+        holiday = $db['holiday']
+      end
+    end
+
+    return holiday
+  end
+
+  def national_holiday?
+    holiday = get_national_holiday
+
+    holiday.each do |d|
+      return true if self.year == d.year && self.month == d.month && self.day == d.day
+    end
+
+    return false
+  end
+
+  def holiday?
+    if self.cwday == 6 || self.cwday == 7
+      return true
+    end 
+
+    return national_holiday?
+  end
+end
+
+d = Date.today
+exit(0) if d.holiday? == true
+
+cmd = ARGV[0]
+pid = nil
+if ARGV.size == 1
+  pid = spawn(cmd)
+else
+  arg = ARGV[1..(ARGV.size-1)]
+  pid = spawn(cmd, *arg)
+end
+
+Process.waitpid(pid)
