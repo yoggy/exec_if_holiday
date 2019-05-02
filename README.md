@@ -1,5 +1,5 @@
 # exec_if_holiday
-## how to...
+## How to...
     $ crontab -l
     
     # 平日ダイヤ
@@ -18,7 +18,7 @@
     46 22 * * * ~/bin/exec_if_holiday say '次の鶴見線は22:58です。終電一本前です。'
     35 23 * * * ~/bin/exec_if_holiday say '次の鶴見線は23:48です。終電ですのでお乗り遅れにご注意ください'
 
-## reference
+## Reference
 
   - [国民の祝日について - 内閣府](https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html)
 
